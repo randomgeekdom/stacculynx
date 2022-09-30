@@ -18,8 +18,8 @@
     </div>
   </div>
 </template>
-
 <script lang="ts">
+import Answer from "@/model/Answer";
 import Question from "@/model/Question";
 import { defineComponent } from "vue";
 
@@ -34,16 +34,29 @@ export default defineComponent({
   },
   async mounted() {
     var apiBase = "https://api.stackexchange.com/2.3/";
-    var questionUrl =
+
+    var answerUrl =
       apiBase +
-      "questions?pagesize=100&order=desc&sort=activity&site=stackoverflow";
+      "answers?pagesize=100&order=desc&sort=activity&site=stackoverflow";
 
-    var response = await fetch(questionUrl);
-    var results: { items: Question[] } = await response.json();
+    var answers = await fetch(answerUrl);
+    var answerResults: { items: Answer[] } = await answers.json();
 
-    this.questions = results.items
-      .filter((x) => x.is_answered && x.answer_count > 1)
-      .slice(0, 5);
+    var appropriateAnswers = answerResults.items
+      .filter((x) => x.is_accepted)
+      .slice(0, 7);
+
+    appropriateAnswers.forEach(async (x) => {
+      var questionUrl =
+        apiBase +
+        "questions/" +
+        x.question_id +
+        "?order=desc&sort=activity&site=stackoverflow";
+
+      var response = await fetch(questionUrl);
+      var questionResult: { items: Question[] } = await response.json();
+      this.questions.push(questionResult.items[0]);
+    });
 
     this.isLoading = false;
   },
